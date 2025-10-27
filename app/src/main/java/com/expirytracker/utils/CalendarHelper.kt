@@ -54,6 +54,7 @@ class CalendarHelper(private val context: Context) {
                 put(CalendarContract.Events.DESCRIPTION, "商品【$productName】将在今天到期，请及时查看。")
                 put(CalendarContract.Events.CALENDAR_ID, calendarId)
                 put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
+                put(CalendarContract.Events.STATUS, CalendarContract.Events.STATUS_CONFIRMED)
                 put(CalendarContract.Events.HAS_ALARM, 1)
             }
 
@@ -117,6 +118,60 @@ class CalendarHelper(private val context: Context) {
             )
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    fun updateEventInCalendar(
+        eventId: Long,
+        productName: String,
+        expiryDate: Long,
+        reminderMinutes: Int = 4320,
+        reminderMethod: Int = 1,
+        reminderHour: Int? = null,
+        reminderMinute: Int? = null
+    ): Boolean {
+        if (!hasCalendarPermission()) {
+            return false
+        }
+
+        try {
+            val eventValues = ContentValues().apply {
+                put(CalendarContract.Events.DTSTART, expiryDate)
+                put(CalendarContract.Events.DTEND, expiryDate + 3600000)
+                put(CalendarContract.Events.TITLE, "⏰ $productName 即将过期")
+                put(CalendarContract.Events.DESCRIPTION, "商品【$productName】将在今天到期，请及时查看。")
+                put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
+                put(CalendarContract.Events.STATUS, CalendarContract.Events.STATUS_CONFIRMED)
+                put(CalendarContract.Events.HAS_ALARM, 1)
+            }
+
+            val updateUri = CalendarContract.Events.CONTENT_URI
+            val updatedRows = context.contentResolver.update(
+                updateUri,
+                eventValues,
+                "${CalendarContract.Events._ID} = ?",
+                arrayOf(eventId.toString())
+            )
+
+            if (updatedRows > 0) {
+                context.contentResolver.delete(
+                    CalendarContract.Reminders.CONTENT_URI,
+                    "${CalendarContract.Reminders.EVENT_ID} = ?",
+                    arrayOf(eventId.toString())
+                )
+
+                val adjustedReminderMinutes = if (reminderHour != null && reminderMinute != null) {
+                    calculateReminderMinutes(expiryDate, reminderMinutes, reminderHour, reminderMinute)
+                } else {
+                    reminderMinutes
+                }
+                addReminderToEvent(eventId, adjustedReminderMinutes, reminderMethod)
+            }
+
+            return updatedRows > 0
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
         }
     }
 

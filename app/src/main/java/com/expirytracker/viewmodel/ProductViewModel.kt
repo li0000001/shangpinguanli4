@@ -41,6 +41,33 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun updateProduct(product: Product, onComplete: (Boolean) -> Unit) = viewModelScope.launch {
+        try {
+            product.calendarEventId?.let { eventId ->
+                val updateSuccess = calendarHelper.updateEventInCalendar(
+                    eventId,
+                    product.name,
+                    product.expiryDate,
+                    product.reminderDays * 24 * 60,
+                    product.reminderMethod,
+                    product.reminderHour,
+                    product.reminderMinute
+                )
+                
+                if (!updateSuccess) {
+                    onComplete(false)
+                    return@launch
+                }
+            }
+            
+            repository.update(product)
+            onComplete(true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            onComplete(false)
+        }
+    }
+
     fun deleteProduct(product: Product, onComplete: (Boolean) -> Unit) = viewModelScope.launch {
         try {
             product.calendarEventId?.let {
