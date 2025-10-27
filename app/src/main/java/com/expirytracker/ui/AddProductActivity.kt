@@ -32,6 +32,13 @@ class AddProductActivity : AppCompatActivity() {
     private var selectedReminderHour: Int? = null
     private var selectedReminderMinute: Int? = null
     private val dateFormat = SimpleDateFormat("yyyy年MM月dd日", Locale.CHINESE)
+    
+    private var editingProduct: Product? = null
+    private var isEditMode = false
+    
+    companion object {
+        const val EXTRA_PRODUCT_ID = "extra_product_id"
+    }
 
     private val exactAlarmSettingsLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -49,11 +56,70 @@ class AddProductActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "添加商品"
 
         viewModel = ViewModelProvider(this)[ProductViewModel::class.java]
 
+        checkEditMode()
         setupListeners()
+    }
+    
+    private fun checkEditMode() {
+        val productId = intent.getLongExtra(EXTRA_PRODUCT_ID, -1L)
+        if (productId != -1L) {
+            isEditMode = true
+            supportActionBar?.title = "编辑商品"
+            loadProductData(productId)
+        } else {
+            isEditMode = false
+            supportActionBar?.title = "添加商品"
+        }
+    }
+    
+    private fun loadProductData(productId: Long) {
+        viewModel.allProducts.observe(this) { products ->
+            val product = products.find { it.id == productId }
+            product?.let {
+                editingProduct = it
+                fillFormWithProductData(it)
+            }
+        }
+    }
+    
+    private fun fillFormWithProductData(product: Product) {
+        binding.editProductName.setText(product.name)
+        
+        product.productionDate?.let { timestamp ->
+            productionDate = Calendar.getInstance().apply {
+                timeInMillis = timestamp
+            }
+            binding.textProductionDate.text = dateFormat.format(Date(timestamp))
+        }
+        
+        product.shelfLifeDays?.let {
+            binding.editShelfLifeDays.setText(it.toString())
+        }
+        
+        expiryDate = Calendar.getInstance().apply {
+            timeInMillis = product.expiryDate
+        }
+        binding.textExpiryDate.text = dateFormat.format(Date(product.expiryDate))
+        
+        binding.editReminderDays.setText(product.reminderDays.toString())
+        
+        selectedReminderMethod = product.reminderMethod
+        when (product.reminderMethod) {
+            ReminderMethod.ALERT -> binding.radioReminderAlert.isChecked = true
+            ReminderMethod.ALARM -> binding.radioReminderAlarm.isChecked = true
+        }
+        
+        selectedReminderHour = product.reminderHour
+        selectedReminderMinute = product.reminderMinute
+        
+        if (product.reminderHour != null && product.reminderMinute != null) {
+            binding.textReminderTime.text = String.format("%02d:%02d", product.reminderHour, product.reminderMinute)
+        }
+        
+        updateReminderTimeVisibility()
     }
 
     private fun setupListeners() {
@@ -207,17 +273,6 @@ class AddProductActivity : AppCompatActivity() {
         val shelfLifeDaysStr = binding.editShelfLifeDays.text.toString()
         val shelfLifeDays = if (shelfLifeDaysStr.isNotEmpty()) shelfLifeDaysStr.toIntOrNull() else null
 
-        val product = Product(
-            name = name,
-            productionDate = productionDate?.timeInMillis,
-            shelfLifeDays = shelfLifeDays,
-            expiryDate = finalExpiryDate.timeInMillis,
-            reminderDays = reminderDays,
-            reminderMethod = selectedReminderMethod,
-            reminderHour = selectedReminderHour,
-            reminderMinute = selectedReminderMinute
-        )
-
         if (!viewModel.hasCalendarPermission()) {
             Toast.makeText(this, "需要日历权限才能添加提醒", Toast.LENGTH_LONG).show()
             finish()
@@ -225,14 +280,51 @@ class AddProductActivity : AppCompatActivity() {
         }
 
         binding.buttonSave.isEnabled = false
-        viewModel.insertProduct(product) { success ->
-            runOnUiThread {
-                if (success) {
-                    Toast.makeText(this, "添加成功", Toast.LENGTH_SHORT).show()
-                    finish()
-                } else {
-                    Toast.makeText(this, "添加失败，请重试", Toast.LENGTH_SHORT).show()
-                    binding.buttonSave.isEnabled = true
+        
+        if (isEditMode && editingProduct != null) {
+            val updatedProduct = editingProduct!!.copy(
+                name = name,
+                productionDate = productionDate?.timeInMillis,
+                shelfLifeDays = shelfLifeDays,
+                expiryDate = finalExpiryDate.timeInMillis,
+                reminderDays = reminderDays,
+                reminderMethod = selectedReminderMethod,
+                reminderHour = selectedReminderHour,
+                reminderMinute = selectedReminderMinute
+            )
+            
+            viewModel.updateProduct(updatedProduct) { success ->
+                runOnUiThread {
+                    if (success) {
+                        Toast.makeText(this, "更新成功", Toast.LENGTH_SHORT).show()
+                        finish()
+                    } else {
+                        Toast.makeText(this, "更新失败，请重试", Toast.LENGTH_SHORT).show()
+                        binding.buttonSave.isEnabled = true
+                    }
+                }
+            }
+        } else {
+            val product = Product(
+                name = name,
+                productionDate = productionDate?.timeInMillis,
+                shelfLifeDays = shelfLifeDays,
+                expiryDate = finalExpiryDate.timeInMillis,
+                reminderDays = reminderDays,
+                reminderMethod = selectedReminderMethod,
+                reminderHour = selectedReminderHour,
+                reminderMinute = selectedReminderMinute
+            )
+            
+            viewModel.insertProduct(product) { success ->
+                runOnUiThread {
+                    if (success) {
+                        Toast.makeText(this, "添加成功", Toast.LENGTH_SHORT).show()
+                        finish()
+                    } else {
+                        Toast.makeText(this, "添加失败，请重试", Toast.LENGTH_SHORT).show()
+                        binding.buttonSave.isEnabled = true
+                    }
                 }
             }
         }
