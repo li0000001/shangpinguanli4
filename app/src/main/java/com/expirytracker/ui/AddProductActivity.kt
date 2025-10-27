@@ -1,8 +1,10 @@
 package com.expirytracker.ui
 
 import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.os.Bundle
 import android.view.MenuItem
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
@@ -21,6 +23,8 @@ class AddProductActivity : AppCompatActivity() {
     private var productionDate: Calendar? = null
     private var expiryDate: Calendar? = null
     private var selectedReminderMethod: Int = ReminderMethod.ALERT
+    private var selectedReminderHour: Int? = null
+    private var selectedReminderMinute: Int? = null
     private val dateFormat = SimpleDateFormat("yyyy年MM月dd日", Locale.CHINESE)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,6 +66,11 @@ class AddProductActivity : AppCompatActivity() {
                 binding.radioReminderAlarm.id -> ReminderMethod.ALARM
                 else -> ReminderMethod.ALERT
             }
+            updateReminderTimeVisibility()
+        }
+
+        binding.buttonSelectReminderTime.setOnClickListener {
+            showTimePicker()
         }
 
         binding.buttonSave.setOnClickListener {
@@ -103,6 +112,34 @@ class AddProductActivity : AppCompatActivity() {
         ).show()
     }
 
+    private fun showTimePicker() {
+        val calendar = Calendar.getInstance()
+        val currentHour = selectedReminderHour ?: 9
+        val currentMinute = selectedReminderMinute ?: 0
+        
+        TimePickerDialog(
+            this,
+            { _, hourOfDay, minute ->
+                selectedReminderHour = hourOfDay
+                selectedReminderMinute = minute
+                binding.textReminderTime.text = String.format("%02d:%02d", hourOfDay, minute)
+            },
+            currentHour,
+            currentMinute,
+            true
+        ).show()
+    }
+
+    private fun updateReminderTimeVisibility() {
+        if (selectedReminderMethod == ReminderMethod.ALARM) {
+            binding.layoutReminderTime.visibility = View.VISIBLE
+        } else {
+            binding.layoutReminderTime.visibility = View.GONE
+            selectedReminderHour = null
+            selectedReminderMinute = null
+        }
+    }
+
     private fun saveProduct() {
         val name = binding.editProductName.text.toString().trim()
         if (name.isEmpty()) {
@@ -113,6 +150,11 @@ class AddProductActivity : AppCompatActivity() {
         val finalExpiryDate = expiryDate
         if (finalExpiryDate == null) {
             Toast.makeText(this, "请选择保质日期或输入生产日期和保质期天数", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (selectedReminderMethod == ReminderMethod.ALARM && (selectedReminderHour == null || selectedReminderMinute == null)) {
+            Toast.makeText(this, "请设置闹钟提醒时间", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -128,7 +170,9 @@ class AddProductActivity : AppCompatActivity() {
             shelfLifeDays = shelfLifeDays,
             expiryDate = finalExpiryDate.timeInMillis,
             reminderDays = reminderDays,
-            reminderMethod = selectedReminderMethod
+            reminderMethod = selectedReminderMethod,
+            reminderHour = selectedReminderHour,
+            reminderMinute = selectedReminderMinute
         )
 
         if (!viewModel.hasCalendarPermission()) {

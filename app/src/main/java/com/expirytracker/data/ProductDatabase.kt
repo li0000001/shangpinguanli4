@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [Product::class], version = 2, exportSchema = false)
+@Database(entities = [Product::class], version = 3, exportSchema = false)
 abstract class ProductDatabase : RoomDatabase() {
     abstract fun productDao(): ProductDao
 
@@ -21,6 +21,13 @@ abstract class ProductDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE products ADD COLUMN reminderHour INTEGER")
+                database.execSQL("ALTER TABLE products ADD COLUMN reminderMinute INTEGER")
+            }
+        }
+
         fun getDatabase(context: Context): ProductDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -28,7 +35,7 @@ abstract class ProductDatabase : RoomDatabase() {
                     ProductDatabase::class.java,
                     "product_database"
                 )
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

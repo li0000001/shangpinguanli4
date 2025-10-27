@@ -72,7 +72,13 @@ class ProductAdapter(
                 }
 
                 val reminderMethodName = ReminderMethod.getMethodName(product.reminderMethod)
-                textReminderDays.text = "提前 ${product.reminderDays} 天提醒 · $reminderMethodName"
+                val reminderTimeText = if (product.reminderHour != null && product.reminderMinute != null) {
+                    val timeStr = ReminderMethod.formatTime(product.reminderHour, product.reminderMinute)
+                    " · $timeStr"
+                } else {
+                    ""
+                }
+                textReminderDays.text = "提前 ${product.reminderDays} 天提醒 · $reminderMethodName$reminderTimeText"
 
                 root.setOnClickListener { onItemClick(product) }
                 buttonDelete.setOnClickListener { onDeleteClick(product) }
