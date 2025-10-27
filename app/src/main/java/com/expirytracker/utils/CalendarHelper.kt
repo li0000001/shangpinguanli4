@@ -25,7 +25,9 @@ class CalendarHelper(private val context: Context) {
         productName: String,
         expiryDate: Long,
         reminderMinutes: Int = 4320,
-        reminderMethod: Int = 1
+        reminderMethod: Int = 1,
+        reminderHour: Int? = null,
+        reminderMinute: Int? = null
     ): Long? {
         if (!hasCalendarPermission()) {
             return null
@@ -52,7 +54,12 @@ class CalendarHelper(private val context: Context) {
             val eventId = eventUri?.lastPathSegment?.toLongOrNull()
 
             eventId?.let {
-                addReminderToEvent(it, reminderMinutes, reminderMethod)
+                val adjustedReminderMinutes = if (reminderHour != null && reminderMinute != null) {
+                    calculateReminderMinutes(expiryDate, reminderMinutes, reminderHour, reminderMinute)
+                } else {
+                    reminderMinutes
+                }
+                addReminderToEvent(it, adjustedReminderMinutes, reminderMethod)
             }
 
             return eventId
@@ -60,6 +67,29 @@ class CalendarHelper(private val context: Context) {
             e.printStackTrace()
             return null
         }
+    }
+
+    private fun calculateReminderMinutes(
+        expiryDate: Long,
+        reminderDaysInMinutes: Int,
+        reminderHour: Int,
+        reminderMinute: Int
+    ): Int {
+        val expiryCalendar = Calendar.getInstance().apply {
+            timeInMillis = expiryDate
+        }
+        
+        val reminderCalendar = Calendar.getInstance().apply {
+            timeInMillis = expiryDate
+            add(Calendar.MINUTE, -reminderDaysInMinutes)
+            set(Calendar.HOUR_OF_DAY, reminderHour)
+            set(Calendar.MINUTE, reminderMinute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        
+        val diffMillis = expiryCalendar.timeInMillis - reminderCalendar.timeInMillis
+        return (diffMillis / (60 * 1000)).toInt()
     }
 
     private fun addReminderToEvent(eventId: Long, reminderMinutes: Int, reminderMethod: Int) {

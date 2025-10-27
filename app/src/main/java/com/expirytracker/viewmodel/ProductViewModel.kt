@@ -27,7 +27,9 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
                 product.name,
                 product.expiryDate,
                 product.reminderDays * 24 * 60,
-                product.reminderMethod
+                product.reminderMethod,
+                product.reminderHour,
+                product.reminderMinute
             )
 
             val productWithEvent = product.copy(calendarEventId = eventId)

@@ -13,6 +13,8 @@ data class Product(
     val expiryDate: Long,
     val reminderDays: Int = 3,
     val reminderMethod: Int = ReminderMethod.ALERT,
+    val reminderHour: Int? = null,
+    val reminderMinute: Int? = null,
     val calendarEventId: Long? = null,
     val createdAt: Long = System.currentTimeMillis()
 )
@@ -27,5 +29,10 @@ object ReminderMethod {
             ALARM -> "闹钟提醒"
             else -> "通知提醒"
         }
+    }
+    
+    fun formatTime(hour: Int?, minute: Int?): String {
+        if (hour == null || minute == null) return ""
+        return String.format("%02d:%02d", hour, minute)
     }
 }
