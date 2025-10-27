@@ -70,6 +70,10 @@ class MainActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         adapter = ProductAdapter(
             onItemClick = { product ->
+                val intent = Intent(this, AddProductActivity::class.java).apply {
+                    putExtra(AddProductActivity.EXTRA_PRODUCT_ID, product.id)
+                }
+                startActivity(intent)
             },
             onDeleteClick = { product ->
                 showDeleteConfirmDialog(product)
