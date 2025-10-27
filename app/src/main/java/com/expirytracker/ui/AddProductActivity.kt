@@ -2,10 +2,16 @@ package com.expirytracker.ui
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.ViewModelProvider
@@ -26,6 +32,16 @@ class AddProductActivity : AppCompatActivity() {
     private var selectedReminderHour: Int? = null
     private var selectedReminderMinute: Int? = null
     private val dateFormat = SimpleDateFormat("yyyy年MM月dd日", Locale.CHINESE)
+
+    private val exactAlarmSettingsLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (!viewModel.canScheduleExactAlarms()) {
+            Toast.makeText(this, "未授予精确闹钟权限，闹钟提醒可能无法正常工作", Toast.LENGTH_LONG).show()
+            selectedReminderMethod = ReminderMethod.ALERT
+            binding.radioReminderAlert.isChecked = true
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,11 +77,20 @@ class AddProductActivity : AppCompatActivity() {
         }
 
         binding.radioGroupReminderMethod.setOnCheckedChangeListener { _, checkedId ->
-            selectedReminderMethod = when (checkedId) {
+            val newMethod = when (checkedId) {
                 binding.radioReminderAlert.id -> ReminderMethod.ALERT
                 binding.radioReminderAlarm.id -> ReminderMethod.ALARM
                 else -> ReminderMethod.ALERT
             }
+            
+            if (newMethod == ReminderMethod.ALARM && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (!viewModel.canScheduleExactAlarms()) {
+                    showExactAlarmPermissionDialog()
+                    return@setOnCheckedChangeListener
+                }
+            }
+            
+            selectedReminderMethod = newMethod
             updateReminderTimeVisibility()
         }
 
@@ -138,6 +163,24 @@ class AddProductActivity : AppCompatActivity() {
             selectedReminderHour = null
             selectedReminderMinute = null
         }
+    }
+
+    private fun showExactAlarmPermissionDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("需要精确闹钟权限")
+            .setMessage("使用闹钟提醒功能需要授予精确闹钟权限。\n\n请在接下来的设置页面中，允许本应用设置精确闹钟和提醒。")
+            .setPositiveButton("去设置") { _, _ ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                        data = Uri.parse("package:$packageName")
+                    }
+                    exactAlarmSettingsLauncher.launch(intent)
+                }
+            }
+            .setNegativeButton("取消") { _, _ ->
+                binding.radioReminderAlert.isChecked = true
+            }
+            .show()
     }
 
     private fun saveProduct() {

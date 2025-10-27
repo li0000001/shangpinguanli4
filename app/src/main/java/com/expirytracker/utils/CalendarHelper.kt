@@ -1,9 +1,11 @@
 package com.expirytracker.utils
 
 import android.Manifest
+import android.app.AlarmManager
 import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.provider.CalendarContract
 import androidx.core.content.ContextCompat
 import java.util.*
@@ -19,6 +21,15 @@ class CalendarHelper(private val context: Context) {
                     context,
                     Manifest.permission.READ_CALENDAR
                 ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    fun canScheduleExactAlarms(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            alarmManager.canScheduleExactAlarms()
+        } else {
+            true
+        }
     }
 
     fun addEventToCalendar(

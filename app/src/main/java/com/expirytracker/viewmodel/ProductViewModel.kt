@@ -57,4 +57,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     fun hasCalendarPermission(): Boolean {
         return calendarHelper.hasCalendarPermission()
     }
+
+    fun canScheduleExactAlarms(): Boolean {
+        return calendarHelper.canScheduleExactAlarms()
+    }
 }
