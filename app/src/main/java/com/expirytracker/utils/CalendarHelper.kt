@@ -54,6 +54,7 @@ class CalendarHelper(private val context: Context) {
                 put(CalendarContract.Events.DESCRIPTION, "商品【$productName】将在今天到期，请及时查看。")
                 put(CalendarContract.Events.CALENDAR_ID, calendarId)
                 put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
+                put(CalendarContract.Events.STATUS, CalendarContract.Events.STATUS_CONFIRMED)
                 put(CalendarContract.Events.HAS_ALARM, 1)
             }
 
