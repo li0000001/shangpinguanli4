@@ -26,7 +26,8 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
             val eventId = calendarHelper.addEventToCalendar(
                 product.name,
                 product.expiryDate,
-                product.reminderDays * 24 * 60
+                product.reminderDays * 24 * 60,
+                product.reminderMethod
             )
 
             val productWithEvent = product.copy(calendarEventId = eventId)

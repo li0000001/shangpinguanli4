@@ -24,7 +24,8 @@ class CalendarHelper(private val context: Context) {
     fun addEventToCalendar(
         productName: String,
         expiryDate: Long,
-        reminderMinutes: Int = 4320
+        reminderMinutes: Int = 4320,
+        reminderMethod: Int = 1
     ): Long? {
         if (!hasCalendarPermission()) {
             return null
@@ -51,7 +52,7 @@ class CalendarHelper(private val context: Context) {
             val eventId = eventUri?.lastPathSegment?.toLongOrNull()
 
             eventId?.let {
-                addReminderToEvent(it, reminderMinutes)
+                addReminderToEvent(it, reminderMinutes, reminderMethod)
             }
 
             return eventId
@@ -61,12 +62,12 @@ class CalendarHelper(private val context: Context) {
         }
     }
 
-    private fun addReminderToEvent(eventId: Long, reminderMinutes: Int) {
+    private fun addReminderToEvent(eventId: Long, reminderMinutes: Int, reminderMethod: Int) {
         try {
             val reminderValues = ContentValues().apply {
                 put(CalendarContract.Reminders.EVENT_ID, eventId)
                 put(CalendarContract.Reminders.MINUTES, reminderMinutes)
-                put(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_ALERT)
+                put(CalendarContract.Reminders.METHOD, reminderMethod)
             }
 
             context.contentResolver.insert(

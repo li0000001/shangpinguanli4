@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.ViewModelProvider
 import com.expirytracker.data.Product
+import com.expirytracker.data.ReminderMethod
 import com.expirytracker.databinding.ActivityAddProductBinding
 import com.expirytracker.viewmodel.ProductViewModel
 import java.text.SimpleDateFormat
@@ -19,6 +20,7 @@ class AddProductActivity : AppCompatActivity() {
     
     private var productionDate: Calendar? = null
     private var expiryDate: Calendar? = null
+    private var selectedReminderMethod: Int = ReminderMethod.ALERT
     private val dateFormat = SimpleDateFormat("yyyy年MM月dd日", Locale.CHINESE)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +54,14 @@ class AddProductActivity : AppCompatActivity() {
 
         binding.editShelfLifeDays.addTextChangedListener {
             updateExpiryDateIfPossible()
+        }
+
+        binding.radioGroupReminderMethod.setOnCheckedChangeListener { _, checkedId ->
+            selectedReminderMethod = when (checkedId) {
+                binding.radioReminderAlert.id -> ReminderMethod.ALERT
+                binding.radioReminderAlarm.id -> ReminderMethod.ALARM
+                else -> ReminderMethod.ALERT
+            }
         }
 
         binding.buttonSave.setOnClickListener {
@@ -117,7 +127,8 @@ class AddProductActivity : AppCompatActivity() {
             productionDate = productionDate?.timeInMillis,
             shelfLifeDays = shelfLifeDays,
             expiryDate = finalExpiryDate.timeInMillis,
-            reminderDays = reminderDays
+            reminderDays = reminderDays,
+            reminderMethod = selectedReminderMethod
         )
 
         if (!viewModel.hasCalendarPermission()) {

@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.expirytracker.data.Product
+import com.expirytracker.data.ReminderMethod
 import com.expirytracker.databinding.ItemProductBinding
 import java.text.SimpleDateFormat
 import java.util.*
@@ -70,7 +71,8 @@ class ProductAdapter(
                     }
                 }
 
-                textReminderDays.text = "提前 ${product.reminderDays} 天提醒"
+                val reminderMethodName = ReminderMethod.getMethodName(product.reminderMethod)
+                textReminderDays.text = "提前 ${product.reminderDays} 天提醒 · $reminderMethodName"
 
                 root.setOnClickListener { onItemClick(product) }
                 buttonDelete.setOnClickListener { onDeleteClick(product) }
