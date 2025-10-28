@@ -47,6 +47,10 @@ class AddProductActivity : AppCompatActivity() {
             Toast.makeText(this, "未授予精确闹钟权限，闹钟提醒可能无法正常工作", Toast.LENGTH_LONG).show()
             selectedReminderMethod = ReminderMethod.ALERT
             binding.radioReminderAlert.isChecked = true
+        } else {
+            selectedReminderMethod = ReminderMethod.ALARM
+            updateReminderTimeVisibility()
+            Toast.makeText(this, "已授予精确闹钟权限，可以使用闹钟提醒功能", Toast.LENGTH_SHORT).show()
         }
     }
 
